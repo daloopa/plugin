@@ -9,9 +9,11 @@ A Claude Code plugin that adds 10 financial analysis skills powered by [Daloopa'
 
 ## Installation
 
-Install from the Claude Code marketplace or from a local path:
-
 ```bash
+# 1. Add the marketplace
+claude plugin marketplace add daloopa/plugin
+
+# 2. Install the plugin
 claude plugin install daloopa
 ```
 
