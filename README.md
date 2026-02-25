@@ -1,0 +1,65 @@
+# Daloopa Plugin for Claude Code
+
+A Claude Code plugin that adds 10 financial analysis skills powered by [Daloopa's](https://daloopa.com) institutional-grade financial data. Works in any project — no Python dependencies or infrastructure needed.
+
+## Prerequisites
+
+- **Claude Code** — Install with `npm install -g @anthropic-ai/claude-code`
+- **Daloopa account** — Sign up at [daloopa.com](https://daloopa.com) (free tier available)
+
+## Installation
+
+Install from the Claude Code marketplace or from a local path:
+
+```bash
+claude plugin install daloopa
+```
+
+## Getting Started
+
+```bash
+# 1. Verify the connection
+/daloopa:setup
+
+# 2. Run your first analysis
+/daloopa:tearsheet AAPL
+```
+
+On first use, OAuth will open a browser window for Daloopa login. No API keys needed.
+
+## Available Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `/daloopa:setup` | Verify MCP connection, show available skills | `/daloopa:setup` |
+| `/daloopa:earnings` | Full earnings analysis with guidance tracking | `/daloopa:earnings AAPL` |
+| `/daloopa:tearsheet` | Quick one-page company overview | `/daloopa:tearsheet MSFT` |
+| `/daloopa:industry` | Cross-company industry comparison | `/daloopa:industry AAPL MSFT GOOG` |
+| `/daloopa:bull-bear` | Bull/bear/base scenario framework | `/daloopa:bull-bear TSLA` |
+| `/daloopa:guidance-tracker` | Track management guidance accuracy | `/daloopa:guidance-tracker NVDA` |
+| `/daloopa:inflection` | Auto-detect metric accelerations/decelerations | `/daloopa:inflection AAPL` |
+| `/daloopa:capital-allocation` | Buybacks, dividends, shareholder yield | `/daloopa:capital-allocation MSFT` |
+| `/daloopa:dcf` | DCF valuation with sensitivity analysis | `/daloopa:dcf AAPL` |
+| `/daloopa:comps` | Trading comparables with peer multiples | `/daloopa:comps AAPL` |
+
+All output is displayed directly in the conversation. You can also just ask Claude anything about a company — the commands are shortcuts for common analysis workflows.
+
+## Data Sources
+
+- **Daloopa MCP** — Institutional-grade financial data from SEC filings (income statements, balance sheets, cash flow, KPIs, guidance, segment breakdowns)
+- **Market data** — The plugin uses generic language for market data (price, multiples, peers). Claude will use whatever tools are available in your environment.
+- **Consensus estimates** — When available, adds beat/miss and forward valuation context.
+
+Every Daloopa-sourced financial figure includes a citation link back to the original filing.
+
+## Full Project Repo
+
+For enhanced features including:
+- Word document research notes (.docx)
+- Multi-tab Excel financial models (.xlsx)
+- PDF rendering with professional styling
+- Investment banking pitch decks (HTML → PDF)
+- Chart generation (6 professional chart types)
+- Forward financial projections engine
+
+See the full project repo: [github.com/daloopa/investing](https://github.com/daloopa/investing)
