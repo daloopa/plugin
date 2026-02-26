@@ -34,9 +34,9 @@ Tell the user about the available slash commands:
 - `/daloopa:dcf TICKER` — DCF valuation with sensitivity analysis
 - `/daloopa:comps TICKER` — Trading comparables with peer multiples
 
-All output is displayed directly in the conversation (no file generation).
+Each skill generates a styled HTML report saved to the `reports/` directory.
 
 Suggest they try `/daloopa:tearsheet AAPL` as a quick first test.
 
 ## Step 4: Note on Enhanced Features
-For file-based outputs (Word documents, Excel models, PDF reports, pitch decks), chart generation, and projection engines, see the full project repo at [github.com/daloopa/investing](https://github.com/daloopa/investing).
+Skills generate HTML reports to the `reports/` directory. For additional output formats (Word documents, Excel models, PDF reports, pitch decks), chart generation, and projection engines, see the full project repo at [github.com/daloopa/investing](https://github.com/daloopa/investing).

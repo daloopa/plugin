@@ -50,7 +50,7 @@ If consensus data is not available, skip these sections and note "consensus data
 
 **Every financial figure sourced from Daloopa MUST include a citation link.** This is non-negotiable.
 
-Format: `[$X.XX million](https://daloopa.com/src/{fundamental_id})`
+Format: `<a href="https://daloopa.com/src/{fundamental_id}">$X.XX million</a>`
 
 The `fundamental_id` (or `id`) is returned in every `get_company_fundamentals` response. You must:
 
