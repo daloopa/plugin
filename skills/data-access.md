@@ -21,7 +21,7 @@ If MCP is not available, tell the user to verify their Daloopa MCP connection by
 
 ## Section 2: External Market Data
 
-Skills that need market-side data should gather the following. Use whatever tools or data sources are available in your environment.
+Skills that need market-side data should gather the following:
 
 | Data Need | What to Get |
 |---|---|
@@ -31,7 +31,11 @@ Skills that need market-side data should gather the following. Use whatever tool
 | **Peer multiples** | Side-by-side trading multiples for 5-10 comparable companies |
 | **Risk-free rate** | 10Y Treasury yield (for WACC/DCF calculations) |
 
-If market data is unavailable, note the limitation and proceed with Daloopa fundamentals only. Use reasonable defaults where needed (beta=1.0, risk-free rate=4.5%).
+**Resolution order — use the first available source:**
+
+1. **MCP tools** — Check your available tools for any MCP server that provides market data (stock quotes, multiples, historical prices). Use whatever the user has configured. This is the preferred path because it requires no local dependencies.
+2. **Web search** — If no market data MCP is available, use web search to look up current stock price and key multiples.
+3. **Defaults** — If no market data source is available at all, use reasonable defaults (beta=1.0, risk-free rate=4.5%) and note the limitation. Proceed with Daloopa fundamentals only.
 
 ## Section 3: Consensus Estimates (Optional)
 
