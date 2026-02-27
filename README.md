@@ -1,10 +1,10 @@
-# Daloopa Plugin for Claude Code
+# Daloopa Plugin for Claude Code & Claude Cowork
 
-A Claude Code plugin that adds 10 financial analysis skills powered by [Daloopa's](https://daloopa.com) institutional-grade financial data. Works in any project — no Python dependencies or infrastructure needed.
+A plugin for Claude Code and Claude Cowork that adds 10 financial analysis skills powered by [Daloopa's](https://daloopa.com) institutional-grade financial data. Works in any project — no Python dependencies or infrastructure needed.
 
 ## Prerequisites
 
-- **Claude Code** — Install with `npm install -g @anthropic-ai/claude-code`
+- **Claude Code or Claude Cowork** — Install Claude Code with `npm install -g @anthropic-ai/claude-code`, or use [Claude Cowork](https://claude.ai/cowork) directly in the browser
 - **Daloopa account** — Sign up at [daloopa.com](https://daloopa.com) (free tier available)
 
 ## Installation
