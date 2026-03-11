@@ -8,7 +8,7 @@ Generate a professional research note for the company specified by the user: $AR
 
 **Before starting, read `data-access.md` for data access methods and `design-system.md` for formatting conventions.** Follow the data access detection logic and design system throughout this skill.
 
-This skill gathers comprehensive data and presents a structured research note as formatted markdown directly in the response.
+This skill gathers comprehensive data and outputs a styled HTML report using the HTML Report Template from design-system.md (full CSS inlined, zero dependencies). Work through each phase sequentially, building up a context object.
 
 ## Phase A — Company Setup
 Look up the company by ticker using `discover_companies`. Capture:
@@ -19,7 +19,7 @@ Look up the company by ticker using `discover_companies`. Capture:
 
 Get current stock price, market cap, shares outstanding, beta, and trading multiples for {TICKER} (see data-access.md Section 2 for how to source market data).
 
-Initialize context: `{company_name, ticker, date, price, market_cap, firm_name, ...}`
+Initialize context: `context = {company_name, ticker, date, price, market_cap, firm_name, ...}`
 
 ## Phase B — Core Financials + Cost Structure
 Calculate 8 quarters backward from `latest_calendar_quarter`. Pull Income Statement metrics:
@@ -32,7 +32,7 @@ Pull Cash Flow & Balance Sheet:
 - Cash, Total Debt, Net Debt
 - D&A
 
-**For every value returned by `get_company_fundamentals`, record its `fundamental_id` (the `id` field).** Store each data point with its citation so citations can be rendered in the final document.
+**For every value returned by `get_company_fundamentals`, record its `fundamental_id` (the `id` field).** Store each data point as `{value, fundamental_id}` so citations can be rendered in the final document.
 
 Compute margins and YoY growth rates for each quarter. Every Daloopa-sourced number must include its citation link: `[$X.XX million](https://daloopa.com/src/{fundamental_id})`.
 
@@ -106,7 +106,7 @@ Compute shareholder yield, FCF payout ratio, net leverage.
 **DCF:**
 - Get risk-free rate (see data-access.md Section 2)
 - Calculate WACC using CAPM
-- Project FCF 5 years — perform calculations directly
+- Project FCF 5 years (LLM performs calculations directly following the projection methodology: analyze historical FCF trends, identify key drivers, estimate revenue growth trajectory, apply margin assumptions, factor in working capital and CapEx, extend to 5-year horizon)
 - Compute terminal value, implied share price, sensitivity table
 
 **Comps:**
@@ -124,10 +124,7 @@ Search SEC filings across multiple queries:
 - "outlook" / "guidance" for management's forward view
 - Company-specific strategic topics (e.g., "AI", "cloud", etc.)
 
-Extract and organize into:
-- Risks — ranked list of risks with impact/probability
-- Investment thesis — variant perception, thesis pillars, catalysts
-- Company description — 2-3 sentence business description
+Extract and organize into risks, investment thesis, and company description.
 
 ### News & Catalysts via WebSearch
 Run 4 WebSearch queries to gather recent external context:
@@ -136,18 +133,26 @@ Run 4 WebSearch queries to gather recent external context:
 3. `"{TICKER} catalysts risks"` — forward-looking events and risk factors
 4. `"{company_name} industry outlook {sector}"` — macro and industry trends
 
-Organize results into three sections:
+Organize results into:
 
-- **News Timeline** — 6-10 key events from the last 6-12 months in reverse chronological order. Each event: date, headline, 1-sentence impact, sentiment tag (Positive / Negative / Mixed / Upcoming). Format as a numbered list.
+- **News Timeline**: 6-10 key events from the last 6-12 months in reverse chronological order. Each event: date, headline, 1-sentence impact, sentiment tag (Positive / Negative / Mixed / Upcoming). Format as a numbered list.
 
-- **Forward Catalysts** — Organized by timeframe:
+- **Forward Catalysts**: Organized by timeframe:
   - **Near-term (0-3 months, HIGH priority)**: earnings dates, product launches, regulatory decisions
   - **Medium-term (3-12 months, MEDIUM priority)**: strategic milestones, contract renewals, industry events
   - **Long-term (1-3 years, LOW priority)**: secular trends, market expansion, competitive dynamics
 
-- **Policy Backdrop** — Macro/regulatory context affecting the company. Tariffs, regulation, interest rates, sector-specific policy. Omit if not material.
+- **Policy Backdrop**: Macro/regulatory context affecting the company. Tariffs, regulation, interest rates, sector-specific policy. Leave empty if not material.
 
-## Phase I — Synthesis + Tensions + Monitoring
+## Phase I — Data Tables
+Present all chart data in well-formatted tables:
+
+1. **Revenue Trend Table**: 8 quarters of revenue with YoY growth
+2. **Margin Trend Table**: Gross margin, operating margin, net margin over 8 quarters
+3. **Segment Breakdown Table**: Latest quarter segment revenue with % of total
+4. **DCF Sensitivity Table**: Implied prices at various WACC/growth combinations, highlight current price
+
+## Phase J — Synthesis + Tensions + Monitoring
 This is the most judgment-intensive step. Be honest and critical — the reader is a professional investor who needs your real assessment, not a balanced summary.
 
 ### Core Synthesis
@@ -179,89 +184,31 @@ Build two monitoring lists for ongoing tracking:
 - Customer concentration changes
 - Capital allocation pivots
 
-## Phase J — Present Research Note
-Present the research note as structured markdown with the following sections:
+## Phase K — Render HTML Report
+Using the HTML Report Template from design-system.md (full CSS inlined in the design system), generate a complete HTML report with the following structure:
 
-### Cover Page
-- Company Name, Ticker, Report Date
-- Current Price, Market Cap
-- Firm Attribution (default: "Daloopa")
-
-### Five Key Tensions
-Numbered list, alternating bull/bear
-
-### Executive Summary
-- 3-4 sentence TL;DR with clear directional view
-- Key metrics table (metric, current value, vs prior period)
-
-### Investment Thesis & Variant Perception
-- Investment thesis narrative
-- What the market thinks vs what the data shows
-- Company description
-
-### Recent News & Catalysts
-- News timeline (reverse chronological, last 6-12 months)
-- Forward catalysts (organized by timeframe: near/medium/long-term)
-- Policy backdrop (if material)
-
-### Financial Analysis
-- 8-quarter financial table (columns = periods, rows = metrics)
-- Include Revenue, Gross Profit, Operating Income, Net Income, EPS, EBITDA, margins, YoY growth rows
-- Cost structure & margin analysis narrative
-- OpEx breakdown table (R&D, SG&A, % of revenue trends)
-
-### Segment & Geographic Analysis
-- Segment revenue table (if available)
-- Geographic revenue table (if available)
-- KPI table (company-specific operating metrics)
-
-### Industry-Specific Deep Dive
-Sector-appropriate analysis based on Phase C template
-
-### Guidance Track Record
-- Guidance accuracy table (if guidance data available)
-- Beat/miss analysis narrative
-
-### What You Need to Believe
-- Bull beliefs (numbered, falsifiable, with evidence)
-- Bull price target + valuation math
-- Bear beliefs (numbered, falsifiable, with evidence)
-- Bear price target + valuation math
-- Risk/reward assessment
-
-### Capital Allocation
-- Shareholder yield, FCF payout ratio, net leverage analysis
-- Buyback & dividend trends
-- Share count table
-
-### Valuation
-**DCF Analysis:**
-- WACC calculation
-- 5-year FCF projections
-- Terminal value, implied share price
-- Sensitivity table (WACC vs terminal growth rate)
-
-**Comps Analysis:**
-- Peer trading multiples table
-- Implied valuation range from peer multiples
-- Forward multiples (if consensus available)
-
-### Risks
-- Ranked list of risks with impact/probability assessment
-
-### Monitoring Framework
-- Quantitative monitors (numbered list with thresholds)
-- Qualitative monitors (numbered list)
-
-### Appendix
-- Methodology notes
-- Data sources and limitations
-
-## Output
-Present the research note directly as formatted markdown in your response. Use clear section headers, professional table formatting, and maintain all Daloopa citations.
+1. **Cover Section**: Company name, ticker, date, current price, market cap, five key tensions
+2. **Executive Summary**: Key metrics table, executive summary, variant perception
+3. **Investment Thesis & Company Overview**: Investment thesis, company description
+4. **News & Catalysts**: News timeline, forward catalysts, policy backdrop
+5. **Financial Analysis**: Revenue trend table, financial metrics table, margin trend table, cost structure analysis, OpEx breakdown, segment breakdown, geographic breakdown, share count history
+6. **Industry Deep Dive**: Sector-specific analysis
+7. **Guidance Track Record**: Guidance table and commentary (if available)
+8. **What You Need to Believe**: Bull beliefs with valuation math, bear beliefs with valuation math, risk/reward assessment
+9. **Capital Allocation**: Commentary on buybacks, dividends, shareholder yield
+10. **Valuation**: DCF summary with sensitivity table, comps commentary with peer multiples
+11. **Risks**: Risk summary from SEC filings
+12. **Monitoring Framework**: Quantitative monitors, qualitative monitors
+13. **Appendix**: Methodology notes
 
 **Citation enforcement:** Every financial figure from Daloopa must use citation format: `[$X.XX million](https://daloopa.com/src/{fundamental_id})`. If a number came from `get_company_fundamentals`, it must have a citation link. No exceptions.
 
-After presenting the full research note, provide:
-- A 3-4 sentence executive summary
+All tables follow the standard financial analysis format: columns = time periods, rows = metrics.
+
+Use the full CSS from design-system.md's HTML Report Template section. The output is a complete, standalone HTML file with all styles inlined.
+
+## Output
+Present the HTML report directly in your response. Tell the user:
+- A 3-4 sentence executive summary of the research note
 - Key findings and valuation range
+- That they can save the HTML and open it in any browser

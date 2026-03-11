@@ -8,7 +8,7 @@ Build a comprehensive Excel financial model (.xlsx) for the company specified by
 
 **Before starting, read `data-access.md` for data access methods and `design-system.md` for formatting conventions.** Follow the data access detection logic and design system throughout this skill.
 
-This skill gathers all available financial data and builds a multi-tab Excel model that the user can download directly from their browser.
+This skill gathers all available financial data and builds a multi-tab Excel model from scratch using a React artifact with SheetJS (xlsx library).
 
 ## Phase 1 — Company Setup
 Look up the company by ticker using `discover_companies`. Capture:
@@ -79,85 +79,105 @@ Calculate periods backward from `latest_calendar_quarter`. Pull as much data as 
 - If consensus forward estimates are available (data-access.md Section 3), include NTM estimates for peers
 
 ## Phase 4 — Projections
-Build forward estimates using inline methodology. Project manually:
-- Revenue: guidance + decay to long-term growth
-- Margins: mean-revert to trailing averages
-- CapEx, D&A, tax rate, share count: trailing trends
+Build forward estimates using the following methodology:
+- Revenue: Start from latest guidance if available, decay to long-term growth rate (5-7%) over projection period
+- Gross Margin: Mean-revert to trailing 8-quarter average
+- Operating Margin: Mean-revert to trailing 8-quarter average
+- CapEx: Project as % of revenue based on trailing 8-quarter average
+- D&A: Project as trailing % of PP&E or revenue
+- Tax Rate: Use trailing effective rate or statutory rate
+- Share Count: Apply trailing buyback rate (QoQ % change)
 
 Project 4-8 quarters forward.
 
-**Projection Methodology:**
-- Calculate trailing 8Q average for each margin metric
-- Apply guidance-implied growth rate for next 1-2 quarters, then decay linearly to long-term rate (GDP+1-2%)
-- For CapEx, use trailing % of revenue unless guidance suggests otherwise
-- For share count, assume trailing buyback rate continues (or zero if no buyback history)
-- Tax rate: use trailing effective rate or statutory rate
-
 ## Phase 5 — DCF Inputs
 Calculate:
-- WACC (CAPM: Rf + Beta × ERP; cost of debt from interest/debt)
-- 5-year FCF projections (annualized from quarterly)
-- Terminal value (perpetuity growth at 2.5-3%)
-- Sensitivity matrix: WACC (7 values) × terminal growth (6 values)
-
-**WACC Calculation:**
-- Cost of Equity = Risk-Free Rate + Beta × Equity Risk Premium (use 6% ERP)
-- Cost of Debt = Interest Expense / Total Debt (use trailing 4Q average)
-- WACC = (E/(D+E)) × Cost of Equity + (D/(D+E)) × Cost of Debt × (1 - Tax Rate)
-
-**Terminal Value:**
-- Terminal FCF = Final year FCF × (1 + Terminal Growth Rate)
-- Terminal Value = Terminal FCF / (WACC - Terminal Growth Rate)
+- WACC using CAPM: Risk-free rate + (Beta × Equity Risk Premium)
+  - Equity Risk Premium: 6.5%
+  - Cost of Debt: Interest Expense / Total Debt
+  - Tax Rate: Effective tax rate from trailing data
+  - Debt/Equity weights from latest balance sheet
+- 5-year FCF projections:
+  - Annualize quarterly projections
+  - FCF = Operating Cash Flow - CapEx
+- Terminal value using perpetuity growth (2.5-3%)
+- Enterprise Value = PV(5Y FCF) + PV(Terminal Value)
+- Equity Value = EV - Net Debt
+- Implied Share Price = Equity Value / Shares Outstanding
+- Sensitivity matrix: WACC (7 values: base ±2% in 0.5% increments) × terminal growth (6 values: 1.5% to 4.0% in 0.5% increments)
 
 ## Phase 6 — Build Excel Model
-Generate a React artifact that uses SheetJS (xlsx library) to build and download the .xlsx file directly in the user's browser.
+Create a React artifact that generates an .xlsx file with these tabs:
 
-The Excel model must contain these tabs:
-1. **Summary** — Key metrics, valuation summary, peer comparison
-2. **Income Statement** — All historical and projected P&L line items
-3. **Balance Sheet** — All historical and projected balance sheet items
-4. **Cash Flow** — OCF, FCF, CapEx, D&A, financing activities
-5. **Segments** — Revenue and operating income by segment
-6. **KPIs** — All company-specific operating metrics
-7. **Projections** — Editable assumption cells (yellow highlight) + forward estimates
-8. **DCF** — WACC build-up, FCF projections, terminal value, sensitivity table
+**Tab 1: Income Statement**
+- Rows: all income statement line items
+- Columns: historical quarters + projected quarters
+- Include YoY growth rows beneath key metrics
+- Format as currency/percentage per design system
 
-**Excel Formatting:**
-- Headers: bold, navy background (#1B2A4A), white text
-- Financial data: accounting format with $ and parentheses for negatives
-- Percentages: 1 decimal place
-- Growth rates: below each metric in italics
-- Editable cells (Projections tab): yellow fill (#FFF3CD)
-- Formulas: use Excel formulas, not static values (e.g., =B5+B6, not hardcoded sum)
+**Tab 2: Balance Sheet**
+- Rows: all balance sheet line items
+- Columns: historical quarters + projected quarters
+- Include working capital metrics
+- Format as currency per design system
 
-**React Artifact Structure:**
-```javascript
-import React from 'react';
-import * as XLSX from 'xlsx';
+**Tab 3: Cash Flow**
+- Rows: all cash flow line items
+- Columns: historical quarters + projected quarters
+- Include FCF calculation
+- Format as currency per design system
 
-function FinancialModel() {
-  const buildModel = () => {
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    
-    // Build each tab (Summary, Income Statement, Balance Sheet, etc.)
-    // Use XLSX.utils.aoa_to_sheet for array-of-arrays data
-    // Apply cell styles (bold, colors, number formats)
-    
-    // Download file
-    XLSX.writeFile(wb, '{TICKER}_model.xlsx');
-  };
-  
-  return <button onClick={buildModel}>Download {TICKER} Model</button>;
-}
-```
+**Tab 4: Segments**
+- Rows: segment revenue and operating income
+- Columns: historical quarters + projected quarters
+- Include segment margin calculation
+- Format as currency/percentage per design system
+
+**Tab 5: KPIs**
+- Rows: all company-specific operating KPIs
+- Columns: historical quarters + projected quarters
+- Include growth rates
+- Format per metric type
+
+**Tab 6: Projections**
+- Editable assumption inputs (yellow cells):
+  - Revenue growth by quarter
+  - Gross margin
+  - Operating margin
+  - CapEx as % of revenue
+  - Tax rate
+  - Share buyback rate
+- Link to other tabs
+
+**Tab 7: DCF**
+- WACC calculation breakdown
+- 5-year FCF projection (annualized)
+- Terminal value calculation
+- Sensitivity matrix (WACC × terminal growth)
+- Implied share price vs current price
+
+**Tab 8: Summary**
+- Company overview (ticker, price, market cap)
+- Key metrics summary table
+- Valuation summary (DCF range, peer multiples, current valuation)
+- Investment highlights
+
+The React artifact should:
+1. Import SheetJS: `import * as XLSX from 'xlsx'`
+2. Build workbook with XLSX.utils methods
+3. Apply cell styling (bold headers, number formats, colors)
+4. Generate downloadable .xlsx file
+5. Provide download button in the UI
 
 ## Output
-Present to the user:
-- The React artifact with a button to download the .xlsx model
-- Summary of what tabs were built
-- Key model outputs: trailing revenue, projected revenue growth, implied DCF value, peer-implied range
-- Remind user that yellow cells in the Projections tab are editable inputs
-- Note: Open the downloaded .xlsx in Excel or Google Sheets to view and edit
+Present the React artifact to the user with:
+- Summary of model structure (8 tabs built)
+- Key model outputs:
+  - Latest quarterly revenue: [$X.XX billion](https://daloopa.com/src/{id})
+  - Projected revenue growth: X.X%
+  - DCF implied value: $X.XX (X.X% upside/downside)
+  - Peer-implied range: $X.XX - $X.XX
+- Note that yellow cells in the Projections tab are editable inputs
+- Instructions: Click the download button to save {TICKER}_model.xlsx
 
 All financial figures gathered must use Daloopa citation format: [$X.XX million](https://daloopa.com/src/{fundamental_id})

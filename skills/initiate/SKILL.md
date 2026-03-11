@@ -1,6 +1,6 @@
 ---
 name: initiate
-description: Initiate coverage — generate both research note and Excel model
+description: Initiate coverage — generate both research note (HTML) and Excel model (.xlsx)
 argument-hint: TICKER
 ---
 
@@ -26,7 +26,7 @@ Get market data (see data-access.md Section 2):
 - Risk-free rate (for DCF)
 
 ## Phase 2 — Comprehensive Data Gathering
-Calculate 8-16 quarters backward from `latest_calendar_quarter`. Pull:
+Follow the `/build-model` skill's Phase 2 data pull (the most comprehensive). Calculate 8-16 quarters backward from `latest_calendar_quarter`. Pull:
 - Full Income Statement (Revenue through EPS, including D&A for EBITDA calc)
 - Full Balance Sheet (Cash through Equity)
 - Full Cash Flow Statement (OCF, CapEx, FCF, Dividends, Buybacks)
@@ -36,7 +36,7 @@ Calculate 8-16 quarters backward from `latest_calendar_quarter`. Pull:
 - All guidance series and corresponding actuals
 - Share count, buyback amounts
 
-**For every value returned by `get_company_fundamentals`, record its `fundamental_id` (the `id` field).** Store each data point with its citation so citations can be rendered in both outputs.
+**For every value returned by `get_company_fundamentals`, record its `fundamental_id` (the `id` field).** Store each data point as `{value, fundamental_id}` so citations can be rendered in both outputs.
 
 ## Phase 3 — Peer Analysis
 Identify 5-8 comparable companies.
@@ -45,35 +45,31 @@ If consensus forward estimates are available (data-access.md Section 3), include
 Pull peer fundamentals from Daloopa where available (revenue growth, margins).
 
 ## Phase 4 — Projections
-Build forward estimates using inline methodology. Project manually:
-- Revenue: guidance + decay to long-term growth
-- Margins: mean-revert to trailing averages
-- CapEx, D&A, tax rate, share count: trailing trends
+Build forward estimates using the following methodology:
+- Revenue: Start from latest guidance if available, decay to long-term growth rate (5-7%) over projection period
+- Gross Margin: Mean-revert to trailing 8-quarter average
+- Operating Margin: Mean-revert to trailing 8-quarter average
+- CapEx: Project as % of revenue based on trailing 8-quarter average
+- D&A: Project as trailing % of PP&E or revenue
+- Tax Rate: Use trailing effective rate or statutory rate
+- Share Count: Apply trailing buyback rate (QoQ % change)
 
 Project 4-8 quarters forward.
 
-**Projection Methodology:**
-- Calculate trailing 8Q average for each margin metric
-- Apply guidance-implied growth rate for next 1-2 quarters, then decay linearly to long-term rate (GDP+1-2%)
-- For CapEx, use trailing % of revenue unless guidance suggests otherwise
-- For share count, assume trailing buyback rate continues (or zero if no buyback history)
-- Tax rate: use trailing effective rate or statutory rate
-
 ## Phase 5 — DCF Valuation
-Calculate:
-- WACC (CAPM: Rf + Beta × ERP; cost of debt from interest/debt)
-- 5-year FCF projections (annualized from quarterly)
-- Terminal value (perpetuity growth at 2.5-3%)
-- Sensitivity matrix: WACC (7 values) × terminal growth (6 values)
-
-**WACC Calculation:**
-- Cost of Equity = Risk-Free Rate + Beta × Equity Risk Premium (use 6% ERP)
-- Cost of Debt = Interest Expense / Total Debt (use trailing 4Q average)
-- WACC = (E/(D+E)) × Cost of Equity + (D/(D+E)) × Cost of Debt × (1 - Tax Rate)
-
-**Terminal Value:**
-- Terminal FCF = Final year FCF × (1 + Terminal Growth Rate)
-- Terminal Value = Terminal FCF / (WACC - Terminal Growth Rate)
+- Calculate WACC using CAPM: Risk-free rate + (Beta × Equity Risk Premium)
+  - Equity Risk Premium: 6.5%
+  - Cost of Debt: Interest Expense / Total Debt
+  - Tax Rate: Effective tax rate from trailing data
+  - Debt/Equity weights from latest balance sheet
+- 5-year FCF projections:
+  - Annualize quarterly projections
+  - FCF = Operating Cash Flow - CapEx
+- Terminal value using perpetuity growth (2.5-3%)
+- Enterprise Value = PV(5Y FCF) + PV(Terminal Value)
+- Equity Value = EV - Net Debt
+- Implied Share Price = Equity Value / Shares Outstanding
+- Sensitivity matrix: WACC (7 values: base ±2% in 0.5% increments) × terminal growth (6 values: 1.5% to 4.0% in 0.5% increments)
 
 ## Phase 6 — Qualitative Research + News & Catalysts
 ### SEC Filing Research
@@ -91,16 +87,16 @@ Run 4 WebSearch queries to gather recent external context:
 3. `"{TICKER} catalysts risks"` — forward-looking events and risk factors
 4. `"{company_name} industry outlook {sector}"` — macro and industry trends
 
-Organize results into three sections:
+Organize results into:
 
-- **News Timeline** — 6-10 key events from the last 6-12 months in reverse chronological order. Each event: date, headline, 1-sentence impact, sentiment tag (Positive / Negative / Mixed / Upcoming). Format as a numbered list.
+- **News Timeline**: 6-10 key events from the last 6-12 months in reverse chronological order. Each event: date, headline, 1-sentence impact, sentiment tag (Positive / Negative / Mixed / Upcoming). Format as a numbered list.
 
-- **Forward Catalysts** — Organized by timeframe:
+- **Forward Catalysts**: Organized by timeframe:
   - **Near-term (0-3 months, HIGH priority)**: earnings dates, product launches, regulatory decisions
   - **Medium-term (3-12 months, MEDIUM priority)**: strategic milestones, contract renewals, industry events
   - **Long-term (1-3 years, LOW priority)**: secular trends, market expansion, competitive dynamics
 
-- **Policy Backdrop** — Macro/regulatory context affecting the company. Tariffs, regulation, interest rates, sector-specific policy. Omit if not material.
+- **Policy Backdrop**: Macro/regulatory context affecting the company. Tariffs, regulation, interest rates, sector-specific policy. Leave empty if not material.
 
 ## Phase 7 — Cost Structure & Industry Deep Dive
 ### Cost Structure & Margin Analysis
@@ -120,12 +116,7 @@ Determine the company's sector and apply the relevant analysis template:
 
 Search for relevant series using `discover_company_series` with sector-appropriate keywords. Pull available data and build the narrative.
 
-## Phase 8 — Guidance Track Record
-Search for guidance series ("guidance", "outlook", "forecast", "estimate", "target").
-Pull guidance and corresponding actuals. Apply +1 quarter offset rule.
-Compute beat/miss rates and patterns.
-
-## Phase 9 — What You Need to Believe
+## Phase 8 — What You Need to Believe
 Build falsifiable bull/bear beliefs:
 
 ### Bull Beliefs (To Go Long)
@@ -149,13 +140,7 @@ For each side:
 - If asymmetry is significant (e.g., 30% upside vs 40% downside), flag it explicitly
 - State which side has the better risk/reward and why
 
-## Phase 10 — Capital Allocation
-Pull buyback, dividend, share count, FCF data.
-Compute shareholder yield, FCF payout ratio, net leverage.
-
-## Phase 11 — Synthesis + Tensions + Monitoring
-This is the most judgment-intensive step. Be honest and critical — the reader is a professional investor who needs your real assessment, not a balanced summary.
-
+## Phase 9 — Synthesis + Tensions + Monitoring
 ### Core Synthesis
 Write:
 - **Executive Summary**: 3-4 sentence TL;DR covering current state, key thesis, valuation view. Include a clear directional view — is this stock attractive, fairly valued, or overvalued at the current price?
@@ -185,137 +170,105 @@ Build two monitoring lists for ongoing tracking:
 - Customer concentration changes
 - Capital allocation pivots
 
-## Phase 12 — Render Both Outputs
+## Phase 10 — Render Both Outputs
 
-### Research Note (Structured Markdown)
-Present the research note as formatted markdown with the following sections:
+### Research Note (HTML Report)
+Using the HTML Report Template from design-system.md (full CSS inlined in the design system), generate a complete HTML report with the following structure:
 
-**Cover Page**
-- Company Name, Ticker, Report Date
-- Current Price, Market Cap
-- Firm Attribution (default: "Daloopa")
-
-**Five Key Tensions**
-Numbered list, alternating bull/bear
-
-**Executive Summary**
-- 3-4 sentence TL;DR with clear directional view
-- Key metrics table (metric, current value, vs prior period)
-
-**Investment Thesis & Variant Perception**
-- Investment thesis narrative
-- What the market thinks vs what the data shows
-- Company description
-
-**Recent News & Catalysts**
-- News timeline (reverse chronological, last 6-12 months)
-- Forward catalysts (organized by timeframe: near/medium/long-term)
-- Policy backdrop (if material)
-
-**Financial Analysis**
-- 8-quarter financial table (columns = periods, rows = metrics)
-- Include Revenue, Gross Profit, Operating Income, Net Income, EPS, EBITDA, margins, YoY growth rows
-- Cost structure & margin analysis narrative
-- OpEx breakdown table (R&D, SG&A, % of revenue trends)
-
-**Segment & Geographic Analysis**
-- Segment revenue table (if available)
-- Geographic revenue table (if available)
-- KPI table (company-specific operating metrics)
-
-**Industry-Specific Deep Dive**
-Sector-appropriate analysis based on Phase 7 template
-
-**Guidance Track Record**
-- Guidance accuracy table (if guidance data available)
-- Beat/miss analysis narrative
-
-**What You Need to Believe**
-- Bull beliefs (numbered, falsifiable, with evidence)
-- Bull price target + valuation math
-- Bear beliefs (numbered, falsifiable, with evidence)
-- Bear price target + valuation math
-- Risk/reward assessment
-
-**Capital Allocation**
-- Shareholder yield, FCF payout ratio, net leverage analysis
-- Buyback & dividend trends
-- Share count table
-
-**Valuation**
-**DCF Analysis:**
-- WACC calculation
-- 5-year FCF projections
-- Terminal value, implied share price
-- Sensitivity table (WACC vs terminal growth rate)
-
-**Comps Analysis:**
-- Peer trading multiples table
-- Implied valuation range from peer multiples
-- Forward multiples (if consensus available)
-
-**Risks**
-- Ranked list of risks with impact/probability assessment
-
-**Monitoring Framework**
-- Quantitative monitors (numbered list with thresholds)
-- Qualitative monitors (numbered list)
-
-**Appendix**
-- Methodology notes
-- Data sources and limitations
-
-### Excel Model (React Artifact with SheetJS)
-Generate a React artifact that uses SheetJS (xlsx library) to build and download the .xlsx file directly in the user's browser.
-
-The Excel model must contain these tabs:
-1. **Summary** — Key metrics, valuation summary, peer comparison
-2. **Income Statement** — All historical and projected P&L line items
-3. **Balance Sheet** — All historical and projected balance sheet items
-4. **Cash Flow** — OCF, FCF, CapEx, D&A, financing activities
-5. **Segments** — Revenue and operating income by segment
-6. **KPIs** — All company-specific operating metrics
-7. **Projections** — Editable assumption cells (yellow highlight) + forward estimates
-8. **DCF** — WACC build-up, FCF projections, terminal value, sensitivity table
-
-**Excel Formatting:**
-- Headers: bold, navy background (#1B2A4A), white text
-- Financial data: accounting format with $ and parentheses for negatives
-- Percentages: 1 decimal place
-- Growth rates: below each metric in italics
-- Editable cells (Projections tab): yellow fill (#FFF3CD)
-- Formulas: use Excel formulas, not static values (e.g., =B5+B6, not hardcoded sum)
-
-**React Artifact Structure:**
-```javascript
-import React from 'react';
-import * as XLSX from 'xlsx';
-
-function FinancialModel() {
-  const buildModel = () => {
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    
-    // Build each tab (Summary, Income Statement, Balance Sheet, etc.)
-    // Use XLSX.utils.aoa_to_sheet for array-of-arrays data
-    // Apply cell styles (bold, colors, number formats)
-    
-    // Download file
-    XLSX.writeFile(wb, '{TICKER}_model.xlsx');
-  };
-  
-  return <button onClick={buildModel}>Download {TICKER} Model</button>;
-}
-```
-
-## Output
-Present to the user:
-1. The complete research note as formatted markdown
-2. The React artifact with a button to download the .xlsx model
-3. Summary of what was generated:
-   - 3-4 sentence executive summary
-   - Key valuation range (DCF implied price + comps range)
-   - Top 3 findings
-4. Remind user that yellow cells in the Excel model's Projections tab are editable inputs
+1. **Cover Section**: Company name, ticker, date, current price, market cap, five key tensions
+2. **Executive Summary**: Key metrics table, executive summary, variant perception
+3. **Investment Thesis & Company Overview**: Investment thesis, company description
+4. **News & Catalysts**: News timeline, forward catalysts, policy backdrop
+5. **Financial Analysis**: Revenue trend table, financial metrics table, margin trend table, cost structure analysis, OpEx breakdown, segment breakdown, geographic breakdown, share count history
+6. **Industry Deep Dive**: Sector-specific analysis
+7. **Guidance Track Record**: Guidance table and commentary (if available)
+8. **What You Need to Believe**: Bull beliefs with valuation math, bear beliefs with valuation math, risk/reward assessment
+9. **Capital Allocation**: Commentary on buybacks, dividends, shareholder yield
+10. **Valuation**: DCF summary with sensitivity table, comps commentary with peer multiples
+11. **Risks**: Risk summary from SEC filings
+12. **Monitoring Framework**: Quantitative monitors, qualitative monitors
+13. **Appendix**: Methodology notes
 
 **Citation enforcement:** Every financial figure from Daloopa must use citation format: `[$X.XX million](https://daloopa.com/src/{fundamental_id})`. If a number came from `get_company_fundamentals`, it must have a citation link. No exceptions.
+
+All tables follow the standard financial analysis format: columns = time periods, rows = metrics.
+
+Use the full CSS from design-system.md's HTML Report Template section. The output is a complete, standalone HTML file with all styles inlined.
+
+### Excel Model (React Artifact with SheetJS)
+Create a React artifact that generates an .xlsx file with these tabs:
+
+**Tab 1: Income Statement**
+- Rows: all income statement line items
+- Columns: historical quarters + projected quarters
+- Include YoY growth rows beneath key metrics
+- Format as currency/percentage per design system
+
+**Tab 2: Balance Sheet**
+- Rows: all balance sheet line items
+- Columns: historical quarters + projected quarters
+- Include working capital metrics
+- Format as currency per design system
+
+**Tab 3: Cash Flow**
+- Rows: all cash flow line items
+- Columns: historical quarters + projected quarters
+- Include FCF calculation
+- Format as currency per design system
+
+**Tab 4: Segments**
+- Rows: segment revenue and operating income
+- Columns: historical quarters + projected quarters
+- Include segment margin calculation
+- Format as currency/percentage per design system
+
+**Tab 5: KPIs**
+- Rows: all company-specific operating KPIs
+- Columns: historical quarters + projected quarters
+- Include growth rates
+- Format per metric type
+
+**Tab 6: Projections**
+- Editable assumption inputs (yellow cells):
+  - Revenue growth by quarter
+  - Gross margin
+  - Operating margin
+  - CapEx as % of revenue
+  - Tax rate
+  - Share buyback rate
+- Link to other tabs
+
+**Tab 7: DCF**
+- WACC calculation breakdown
+- 5-year FCF projection (annualized)
+- Terminal value calculation
+- Sensitivity matrix (WACC × terminal growth)
+- Implied share price vs current price
+
+**Tab 8: Summary**
+- Company overview (ticker, price, market cap)
+- Key metrics summary table
+- Valuation summary (DCF range, peer multiples, current valuation)
+- Investment highlights
+
+The React artifact should:
+1. Import SheetJS: `import * as XLSX from 'xlsx'`
+2. Build workbook with XLSX.utils methods
+3. Apply cell styling (bold headers, number formats, colors)
+4. Generate downloadable .xlsx file
+5. Provide download button in the UI
+
+## Output
+Tell the user:
+- **Research Note (HTML)**: 3-4 sentence executive summary, key findings, valuation range, note that they can save the HTML and open it in any browser
+- **Excel Model**: Summary of model structure (8 tabs), key model outputs:
+  - Latest quarterly revenue: [$X.XX billion](https://daloopa.com/src/{id})
+  - Projected revenue growth: X.X%
+  - DCF implied value: $X.XX (X.X% upside/downside)
+  - Peer-implied range: $X.XX - $X.XX
+- Note that yellow cells in the Projections tab are editable inputs
+- Instructions: Click the download button to save {TICKER}_model.xlsx
+
+Present both the HTML report and the React artifact directly in your response.
+
+All financial figures must use Daloopa citation format: [$X.XX million](https://daloopa.com/src/{fundamental_id})
