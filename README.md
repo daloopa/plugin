@@ -1,6 +1,6 @@
 # Daloopa Plugin for Claude Code & Claude Cowork
 
-A plugin for Claude Code and Claude Cowork that adds 10 financial analysis skills powered by [Daloopa's](https://daloopa.com) institutional-grade financial data. Works in any project — no Python dependencies or infrastructure needed.
+A plugin for Claude Code and Claude Cowork that adds 16 financial analysis skills powered by [Daloopa's](https://daloopa.com) institutional-grade financial data. Works in any project — no Python dependencies or infrastructure needed.
 
 ## Prerequisites
 
@@ -34,15 +34,21 @@ On first use, OAuth will open a browser window for Daloopa login. No API keys ne
 | Command | Description | Example |
 |---------|-------------|---------|
 | `/daloopa:setup` | Verify MCP connection, show available skills | `/daloopa:setup` |
-| `/daloopa:earnings` | Full earnings analysis with guidance tracking | `/daloopa:earnings AAPL` |
 | `/daloopa:tearsheet` | Quick one-page company overview | `/daloopa:tearsheet MSFT` |
-| `/daloopa:industry` | Cross-company industry comparison | `/daloopa:industry AAPL MSFT GOOG` |
-| `/daloopa:bull-bear` | Bull/bear/base scenario framework | `/daloopa:bull-bear TSLA` |
+| `/daloopa:earnings` | Full earnings analysis with guidance tracking | `/daloopa:earnings AAPL` |
 | `/daloopa:guidance-tracker` | Track management guidance accuracy | `/daloopa:guidance-tracker NVDA` |
+| `/daloopa:bull-bear` | Bull/bear/base scenario framework | `/daloopa:bull-bear TSLA` |
+| `/daloopa:industry` | Cross-company industry comparison | `/daloopa:industry AAPL MSFT GOOG` |
 | `/daloopa:inflection` | Auto-detect metric accelerations/decelerations | `/daloopa:inflection AAPL` |
 | `/daloopa:capital-allocation` | Buybacks, dividends, shareholder yield | `/daloopa:capital-allocation MSFT` |
 | `/daloopa:dcf` | DCF valuation with sensitivity analysis | `/daloopa:dcf AAPL` |
 | `/daloopa:comps` | Trading comparables with peer multiples | `/daloopa:comps AAPL` |
+| `/daloopa:supply-chain` | Interactive supply chain dashboard with suppliers and customers | `/daloopa:supply-chain AAPL` |
+| `/daloopa:research-note` | Generate a professional Word document research note | `/daloopa:research-note AAPL` |
+| `/daloopa:build-model` | Build a multi-tab Excel financial model | `/daloopa:build-model AAPL` |
+| `/daloopa:comp-sheet` | Industry comp sheet Excel model with deep operational KPIs | `/daloopa:comp-sheet AAPL` |
+| `/daloopa:ib-deck` | Investment banking pitch deck (HTML → PDF) | `/daloopa:ib-deck AAPL` |
+| `/daloopa:initiate` | Initiate coverage — research note + Excel model | `/daloopa:initiate AAPL` |
 
 All output is displayed directly in the conversation. You can also just ask Claude anything about a company — the commands are shortcuts for common analysis workflows.
 
