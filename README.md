@@ -1,6 +1,6 @@
 # Daloopa Plugin for Claude Code & Claude Cowork
 
-A plugin for Claude Code and Claude Cowork that adds 16 financial analysis skills powered by [Daloopa's](https://daloopa.com) institutional-grade financial data. Works in any project — no Python dependencies or infrastructure needed.
+A plugin for Claude Code and Claude Cowork that adds 19 financial analysis skills powered by [Daloopa's](https://daloopa.com) institutional-grade financial data. Works in any project — no Python dependencies or infrastructure needed.
 
 ## Prerequisites
 
@@ -36,6 +36,8 @@ On first use, OAuth will open a browser window for Daloopa login. No API keys ne
 | `/daloopa:setup` | Verify MCP connection, show available skills | `/daloopa:setup` |
 | `/daloopa:tearsheet` | Quick one-page company overview | `/daloopa:tearsheet MSFT` |
 | `/daloopa:earnings` | Full earnings analysis with guidance tracking | `/daloopa:earnings AAPL` |
+| `/daloopa:earnings-prep` | Pre-earnings preparation report for the night before | `/daloopa:earnings-prep AAPL` |
+| `/daloopa:earnings-flash` | Rapid first-read earnings flash | `/daloopa:earnings-flash AAPL` |
 | `/daloopa:guidance-tracker` | Track management guidance accuracy | `/daloopa:guidance-tracker NVDA` |
 | `/daloopa:bull-bear` | Bull/bear/base scenario framework | `/daloopa:bull-bear TSLA` |
 | `/daloopa:industry` | Cross-company industry comparison | `/daloopa:industry AAPL MSFT GOOG` |
@@ -43,6 +45,7 @@ On first use, OAuth will open a browser window for Daloopa login. No API keys ne
 | `/daloopa:capital-allocation` | Buybacks, dividends, shareholder yield | `/daloopa:capital-allocation MSFT` |
 | `/daloopa:dcf` | DCF valuation with sensitivity analysis | `/daloopa:dcf AAPL` |
 | `/daloopa:comps` | Trading comparables with peer multiples | `/daloopa:comps AAPL` |
+| `/daloopa:precedent-transactions` | Precedent M&A transactions with deal multiples | `/daloopa:precedent-transactions AAPL` |
 | `/daloopa:supply-chain` | Interactive supply chain dashboard with suppliers and customers | `/daloopa:supply-chain AAPL` |
 | `/daloopa:research-note` | Generate a professional Word document research note | `/daloopa:research-note AAPL` |
 | `/daloopa:build-model` | Build a multi-tab Excel financial model | `/daloopa:build-model AAPL` |
