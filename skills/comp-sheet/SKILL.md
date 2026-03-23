@@ -53,6 +53,11 @@ For each company (target + all peers), pull from Daloopa:
 - Price, market cap, enterprise value, shares outstanding, beta
 - All trading multiples: P/E (trailing + forward), EV/EBITDA, P/S, P/B, EV/FCF, dividend yield
 
+Follow the 3-step resolution order:
+1. Check for MCP market data tools
+2. Use web search if no MCP available
+3. Fall back to sensible defaults if needed
+
 ## 3. KPI Discovery & Mapping
 
 After pulling data, build the KPI mapping:
@@ -87,78 +92,111 @@ For each company, calculate:
   - Convert to implied share price
 - Compute median implied price across methodologies
 
-## 5. Structure Data for Excel Export
+## 5. Build Excel Workbook
 
-Organize the data into 8 tabs (structure shown below). This will be rendered as a downloadable .xlsx using a React artifact with SheetJS:
+Generate a React artifact that uses SheetJS (xlsx library) to build and download the Excel file directly in the user's browser.
 
-**Tab 1: Comp Summary** — one-pager with all companies, multiples, implied valuation
-- Company name, ticker, price, market cap, enterprise value
-- Trading multiples (P/E, EV/EBITDA, P/S, P/B, EV/FCF, dividend yield)
-- Implied valuation by methodology (P/E implied, EV/EBITDA implied, P/S implied, EV/FCF implied, median implied)
-- Premium/discount to median
+The workbook must contain 8 tabs with the following structure:
 
-**Tab 2: Revenue Drivers** — unit economics decomposition per company (trailing 4Q)
-- Segment revenue breakdown
-- Key volume metrics (units, subscribers, stores, etc.)
-- Key price metrics (ARPU, ASP, etc.)
-- Revenue per unit, revenue per segment
+### Tab 1: Comp Summary
+One-page overview with all companies side-by-side:
+- Company name, ticker, price, market cap
+- All valuation multiples (P/E, EV/EBITDA, P/S, P/B, EV/FCF, div yield)
+- Latest quarter revenue, EBITDA, net income
+- Growth rates (revenue YoY, EPS YoY)
+- Key margins (gross, operating, net, FCF)
+- Implied valuation for target (median across methodologies)
+- Premium/discount vs peers
 
-**Tab 3: Operating KPIs** — cross-company KPI comparison matrix
-- Rows = KPIs (grouped by category: Segment Revenue, Growth KPIs, Unit Economics, Efficiency, Engagement)
+### Tab 2: Revenue Drivers
+Unit economics decomposition per company (trailing 4 quarters):
+- Total revenue (4Q sum)
+- Segment revenue breakdown (% of total)
+- Key unit economics: units × ASP, or subscribers × ARPU, etc.
+- Growth trajectory by segment
+
+### Tab 3: Operating KPIs
+Cross-company KPI comparison matrix:
+- Rows = KPIs (grouped by category from step 3)
 - Columns = companies
-- Trailing 4Q averages or latest quarter values
-- Sparse matrix (not all KPIs available for all companies)
+- Show latest quarter value + YoY change where applicable
+- Highlight cells where data is unavailable (sparse matrix)
 
-**Tab 4: Financial Summary** — side-by-side income statements (trailing 4Q)
-- Revenue, Gross Profit, Operating Income, Net Income, EPS
-- R&D, SG&A, CapEx, D&A
-- OCF, FCF
-- All companies in columns, metrics in rows
+### Tab 4: Financial Summary
+Side-by-side income statements (trailing 4 quarters):
+- Revenue, COGS, Gross Profit
+- R&D, SG&A, Operating Income
+- Interest, Tax, Net Income
+- Diluted EPS
+- Compute 4Q sums for each line item
 
-**Tab 5: Growth & Margins** — trend analysis (up to 8Q)
-- Revenue YoY growth, EPS YoY growth, segment growth
-- Gross margin, operating margin, net margin, FCF margin
-- Each metric with 8Q history per company
+### Tab 5: Growth & Margins
+Trend analysis (up to 8 quarters):
+- Revenue growth YoY (%)
+- EPS growth YoY (%)
+- Gross margin (%)
+- Operating margin (%)
+- Net margin (%)
+- FCF margin (%)
+- Show trends across all periods for each company
 
-**Tab 6: Valuation Detail** — implied prices by methodology, premium/discount
-- For each methodology (P/E, EV/EBITDA, P/S, EV/FCF):
-  - Peer median multiple
-  - Target metric (trailing 4Q or forward)
-  - Implied equity value
-  - Implied share price
-- Median implied price across methodologies
-- Current price vs implied (premium/discount %)
+### Tab 6: Valuation Detail
+Implied prices by methodology:
+- P/E implied (peer median P/E × target EPS)
+- EV/EBITDA implied
+- P/S implied
+- EV/FCF implied
+- Median implied price
+- Current price
+- Premium/discount (%)
 
-**Tab 7: Balance Sheet & Capital** — leverage and capital returns
-- Total debt, cash, net debt
-- Net debt/EBITDA
-- Buybacks (trailing 4Q), dividends (trailing 4Q)
-- FCF yield, shareholder yield
+### Tab 7: Balance Sheet & Capital
+Leverage and capital returns:
+- Total Debt, Cash, Net Debt
+- Net Debt/EBITDA
+- Trailing 4Q: OCF, CapEx, FCF
+- FCF Yield
+- Shareholder Yield (buybacks + dividends)
 
-**Tab 8: Raw Data** — full quarterly appendix for each company
-- All financials, margins, growth rates, KPIs by quarter (8Q)
-- One section per company
+### Tab 8: Raw Data
+Full quarterly appendix for each company:
+- All 8 quarters of financial data
+- All KPIs by quarter
+- All growth rates and margins by quarter
+- Complete data backing the summary tabs
 
-## 6. Render Excel Artifact
+**Styling requirements:**
+- Apply the design system color palette (Navy #1B2A4A headers, Steel Blue #4A6FA5 accents)
+- Number formatting per design-system.md conventions
+- Bold headers, freeze panes on all tabs
+- Conditional formatting: green for positive growth, red for negative
+- Auto-adjust column widths
 
-Generate a React artifact that:
-- Uses the SheetJS library (xlsx) to build a workbook with 8 tabs matching the structure above
-- Applies basic styling (bold headers, number formatting, freeze panes)
-- Downloads the .xlsx file to the user's browser with filename `{TICKERS}_comp_sheet.xlsx`
+The React artifact should:
+1. Import the SheetJS library (xlsx)
+2. Construct all 8 worksheets programmatically
+3. Apply styling (bold headers, number formats, colors)
+4. Generate the .xlsx file
+5. Trigger browser download with filename: `{TARGET_TICKER}_comp_sheet_{DATE}.xlsx`
 
-The artifact should include:
-- Import statement for xlsx library (use CDN: https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js)
-- Button to trigger download
-- All 8 tabs pre-populated with the data from steps 1-4
+## 6. Output Summary
 
-## 7. Output
+After generating the Excel workbook, provide a concise summary highlighting:
 
-Tell the user that the `.xlsx` will download when they click the button in the artifact.
+**Target positioning vs peers**:
+- Where does it rank on growth, margins, and valuation?
+- Quartile positioning across key metrics
 
-Highlight in your summary:
-- **Target positioning vs peers**: Where does it rank on growth, margins, and valuation?
-- **Most differentiated KPIs**: Which operational metrics set the target apart (positive or negative)?
-- **Implied valuation range**: What does the peer group suggest the stock is worth?
-- **Key risk**: What's the biggest vulnerability the comp sheet reveals (e.g., premium valuation with decelerating KPIs, margins below peers, etc.)?
+**Most differentiated KPIs**:
+- Which operational metrics set the target apart (positive or negative)?
+- Notable outliers in the KPI matrix
+
+**Implied valuation range**:
+- What does the peer group suggest the stock is worth?
+- Premium/discount vs current price
+- Which methodology drives the highest/lowest implied value?
+
+**Key risk**:
+- What's the biggest vulnerability the comp sheet reveals (e.g., premium valuation with decelerating KPIs, margins below peers, concentration risk)?
 
 All financial figures in the summary must use Daloopa citation format: [$X.XX million](https://daloopa.com/src/{fundamental_id})
