@@ -1,0 +1,5 @@
+[mcp_servers.daloopa]
+url = "https://mcp.daloopa.com/server/mcp"
+
+[mcp_servers.daloopa-docs]
+url = "https://docs.daloopa.com/mcp"
