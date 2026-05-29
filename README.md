@@ -11,7 +11,7 @@ A plugin for Claude Code and Claude Cowork that adds 21 financial analysis skill
 
 ```bash
 # 1. Add the marketplace
-claude plugin marketplace add daloopa/plugin
+claude plugin marketplace add daloopa/daloopa-plugin-claude
 
 # 2. Install the plugin
 claude plugin install daloopa
@@ -68,5 +68,5 @@ Every Daloopa-sourced financial figure should include a citation link back to th
 ## Related Repos
 
 - This repo is the Claude distribution.
-- The Codex and ChatGPT skills distribution lives in the sibling `plugin-codex` repo.
+- The Codex and ChatGPT skills distribution lives in the sibling [`daloopa-plugin-codex`](https://github.com/daloopa/daloopa-plugin-codex) repo.
 - For enhanced infrastructure and application code, see [github.com/daloopa/investing](https://github.com/daloopa/investing).
