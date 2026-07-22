@@ -4,11 +4,11 @@ description: Generate a professional Word document research note
 argument-hint: TICKER
 ---
 
-Generate a professional research note (HTML report) for the company specified by the user: $ARGUMENTS
+Generate a professional research note (as a styled HTML report) for the company specified by the user: $ARGUMENTS
 
 **Before starting, read `data-access.md` for data access methods and `design-system.md` for formatting conventions.** Follow the data access detection logic and design system throughout this skill.
 
-This is an orchestrator skill that gathers comprehensive data, then renders a styled HTML report using the HTML Report Template from design-system.md (full CSS inlined, zero dependencies).
+This is an orchestrator skill that gathers comprehensive data, then renders a styled HTML research note. Work through each phase sequentially, building up a context object that gets rendered directly into the final report.
 
 ## Phase A — Company Setup
 Look up the company by ticker using `discover_companies`. Capture:
@@ -17,7 +17,7 @@ Look up the company by ticker using `discover_companies`. Capture:
 - `latest_fiscal_quarter`
 - Firm name for report attribution (default: "Daloopa") — see `data-access.md` Section 4.5
 
-Get current stock price, market cap, shares outstanding, beta, and trading multiples for {TICKER} using the 3-step resolution: (1) MCP market data tools if available, (2) web search, (3) sensible defaults (see data-access.md Section 2 for how to source market data).
+Get current stock price, market cap, shares outstanding, beta, and trading multiples for {TICKER} (see data-access.md Section 2 for how to source market data).
 
 Initialize context: `context = {company_name, ticker, date, price, market_cap, firm_name, ...}`
 
@@ -36,7 +36,7 @@ Pull Cash Flow & Balance Sheet:
 
 Compute margins and YoY growth rates for each quarter. Build `context.financials` with tables. Every Daloopa-sourced number must include its citation link: `[$X.XX million](https://daloopa.com/src/{fundamental_id})`.
 
-### Cost Structure & Margin Analysis
+### Cost Structure & Margin Analysis (NEW)
 After the core financial pull, add:
 
 - **COGS driver identification**: Search for cost-related series ("cost of goods", "materials", "manufacturing", "input cost"). Identify 3-5 biggest cost line items and their trends over 8Q.
@@ -56,7 +56,7 @@ Think about what KPIs matter most for THIS company's business model. Search for:
 
 Pull the same 8 quarters (from `latest_calendar_quarter`). Build `context.kpis` and `context.segments`.
 
-### Industry-Specific Deep Dive
+### Industry-Specific Deep Dive (NEW)
 After the KPI/segment pull, determine the company's sector and apply the relevant analysis template:
 
 - **Manufacturing/Industrial**: Bookings & backlog, book-to-bill ratio, pipeline by geography, capacity utilization
@@ -112,6 +112,8 @@ New context keys:
 - `bear_target` (string) — price target + valuation math
 - `risk_reward_assessment` (string) — asymmetry analysis
 
+**Do NOT set these old keys** (they are removed from the template): `bull_probability`, `base_probability`, `bear_probability`, `bull_description`, `base_description`, `bear_description`, `scenario_chart`, `bull_price_target`, `base_price_target`, `bear_price_target`.
+
 ## Phase F — Capital Allocation (follows /capital-allocation methodology)
 Pull buyback, dividend, share count, FCF data.
 Compute shareholder yield, FCF payout ratio, net leverage.
@@ -120,15 +122,15 @@ Build `context.capital_allocation`.
 ## Phase G — Valuation (follows /dcf + /comps methodology)
 
 **DCF:**
-- Get risk-free rate using the 3-step resolution: (1) MCP market data tools if available, (2) web search, (3) sensible defaults (see data-access.md Section 2)
+- Get risk-free rate (see data-access.md Section 2)
 - Calculate WACC using CAPM
-- Project FCF 5 years manually (describe methodology inline and perform calculations directly)
+- Project FCF 5 years — describe the projection methodology inline (revenue build, margin assumptions, terminal growth) and perform the calculations directly; no external projection engine is used
 - Compute terminal value, implied share price, sensitivity table
 - Build `context.dcf` (set `context.has_dcf = true`)
 
 **Comps:**
 - Identify 5-8 peers
-- Get peer trading multiples using the 3-step resolution: (1) MCP market data tools if available, (2) web search, (3) sensible defaults (see data-access.md Section 2)
+- Get peer trading multiples (see data-access.md Section 2)
 - If consensus forward estimates are available (data-access.md Section 3), include forward multiples
 - Compute implied valuation range from peer multiples
 - Build `context.comps` (set `context.has_comps = true`)
@@ -147,12 +149,14 @@ Extract and organize into:
 - `context.investment_thesis` — variant perception, thesis pillars, catalysts
 - `context.company_description` — 2-3 sentence business description
 
-### News & Catalysts via WebSearch
+### News & Catalysts via WebSearch (NEW)
 Run 4 WebSearch queries to gather recent external context:
 1. `"{TICKER} {company_name} news {year}"` — recent headlines and developments
 2. `"{TICKER} analyst upgrade downgrade price target"` — sell-side sentiment shifts
 3. `"{TICKER} catalysts risks"` — forward-looking events and risk factors
 4. `"{company_name} industry outlook {sector}"` — macro and industry trends
+
+**Source quality (MANDATORY):** Follow `data-access.md` Section 2.5 — cite only primary sources (SEC filings, IR pages, press releases, transcripts) and Tier-1 financial press (Reuters, Bloomberg, WSJ, FT). Never use or cite Yahoo Finance editorial, Benzinga, Seeking Alpha, Motley Fool, Zacks, TipRanks, StockTwits, Reddit, or similar aggregators/blogs.
 
 Organize results into three new context keys:
 
@@ -165,8 +169,15 @@ Organize results into three new context keys:
 
 - `policy_backdrop` (string) — Macro/regulatory context affecting the company. Tariffs, regulation, interest rates, sector-specific policy. Leave empty string if not material.
 
-## Phase I — Charts
-Present all chart data in well-formatted tables. No chart generation needed.
+## Phase I — Data Presentation Tables
+Present all trend and sensitivity data as well-formatted tables (no chart images are generated):
+
+1. Revenue trend table — periods as columns, revenue level + YoY growth as rows
+2. Margin trend table — periods as columns, gross/operating/net margin as rows
+3. Segment mix table — segments as rows, periods as columns, with % of total mix sub-rows
+4. DCF sensitivity table — WACC values as rows, terminal growth values as columns, implied share price at each intersection, current price called out for reference
+
+Set the corresponding table context keys (e.g., `context.revenue_trend_table`, `context.margin_trend_table`, `context.dcf_sensitivity_table`) using the table conventions in design-system.md.
 
 ## Phase J — Synthesis + Tensions + Monitoring
 This is the most judgment-intensive step. Be honest and critical — the reader is a professional investor who needs your real assessment, not a balanced summary.
@@ -179,7 +190,7 @@ Write:
 - **Red Flags & Concerns**: Any quality-of-earnings issues, sustainability questions, or risks the market may be underpricing
 - Build `context.executive_summary`, `context.variant_perception`
 
-### Five Key Tensions
+### Five Key Tensions (NEW)
 Identify the 5 most critical bull/bear debates for this stock. Each tension is a single line that frames both sides. Alternate between bullish-leaning and bearish-leaning tensions. Every tension must reference a specific data point from the analysis.
 
 Format as a numbered list:
@@ -189,7 +200,7 @@ Format as a numbered list:
 
 Build `context.five_key_tensions` (string).
 
-### Monitoring Framework
+### Monitoring Framework (NEW)
 Build two monitoring lists for ongoing tracking:
 
 **Quantitative Monitors** — 5-7 specific metrics with explicit thresholds:
@@ -206,74 +217,17 @@ Build two monitoring lists for ongoing tracking:
 Build `context.monitoring_quantitative` and `context.monitoring_qualitative` (strings, numbered lists).
 
 ### Structured Tables
-Also build structured tables for the template:
+Also build structured tables for the report:
 - `context.key_metrics_table` — [{metric, value, vs_prior}] for the exec summary table
 - `context.financials_table` — [{metric, q1, q2, ...}] for the financial analysis section
 - `context.segments_table`, `context.geo_table`, `context.shares_outstanding_table`
 - `context.opex_breakdown_table` — [{metric, q1, q2, ...}] for R&D, SG&A, % of revenue rows
 - `context.guidance_table`, `context.comps_table`, etc.
 
-## Phase K — Render HTML Report
+## Phase K — Render Report
+Compile the full context into a single styled HTML research note using the HTML Report Template from design-system.md (full CSS inlined, zero dependencies). Never output raw markdown — the design system explicitly forbids it.
 
-Using the HTML Report Template from design-system.md, generate a styled HTML report with full CSS inlined. The report should include:
-
-**Header Section:**
-- Company name and ticker
-- Report date and firm attribution
-- Five Key Tensions (numbered list)
-
-**Section 1: Executive Summary**
-- Key metrics table
-- Executive summary narrative
-- Variant perception
-
-**Section 2: Company Overview**
-- Business description
-- Investment thesis
-
-**Section 3: Recent News & Catalysts**
-- News timeline
-- Forward catalysts
-- Policy backdrop
-
-**Section 4: Financial Analysis**
-- Financials table (8 quarters)
-- Cost structure & margin analysis
-- OpEx breakdown table
-- Segment and geographic tables
-- Share count table
-
-**Section 5: Industry-Specific Analysis**
-- Industry deep dive narrative
-
-**Section 6: Guidance Track Record**
-- Guidance table and beat/miss analysis (if available)
-
-**Section 7: What You Need to Believe**
-- Bull beliefs with valuation target
-- Bear beliefs with valuation target
-- Risk/reward assessment
-
-**Section 8: Catalysts**
-- Forward catalysts
-- Policy backdrop
-
-**Section 9: Capital Allocation**
-- Capital allocation commentary
-
-**Section 10: Valuation**
-- DCF summary and sensitivity (if available)
-- Comps commentary (if available)
-
-**Section 11: Risks**
-- Risks summary
-
-**Section 12: Monitoring Framework**
-- Quantitative monitors
-- Qualitative monitors
-
-**Appendix:**
-- Additional context or data
+Present the complete HTML report directly in the response — do not save it to a file or serialize the context to disk.
 
 ### Context Key Checklist
 Verify these keys exist before rendering (set empty string if data unavailable):
@@ -288,7 +242,7 @@ Verify these keys exist before rendering (set empty string if data unavailable):
 `news_timeline`
 
 **Financials:**
-`financials_table`, `cost_margin_analysis`, `opex_breakdown_table`, `segments_table`, `geo_table`, `shares_outstanding_table`
+`revenue_trend_table`, `financials_table`, `margin_trend_table`, `cost_margin_analysis`, `opex_breakdown_table`, `segments_table`, `geo_table`, `shares_outstanding_table`
 
 **Industry:**
 `industry_deep_dive`
@@ -306,7 +260,7 @@ Verify these keys exist before rendering (set empty string if data unavailable):
 `capital_allocation_commentary`
 
 **Valuation:**
-`has_dcf`, `dcf_summary`, `has_comps`, `comps_commentary`
+`has_dcf`, `dcf_summary`, `dcf_sensitivity_table`, `has_comps`, `comps_commentary`
 
 **Risks:**
 `risks_summary`
@@ -318,9 +272,8 @@ Verify these keys exist before rendering (set empty string if data unavailable):
 `appendix_content`
 
 ## Output
-Present the styled HTML report directly in the response. Tell the user:
+Present the complete HTML research note directly in the response, followed by:
 - A 3-4 sentence executive summary of the research note
 - Key findings and valuation range
-- Instruct them to save the HTML and open in browser for full formatting
 
-**Citation enforcement:** Every financial figure from Daloopa in the HTML report must use citation format: `[$X.XX million](https://daloopa.com/src/{fundamental_id})`. If a number came from `get_company_fundamentals`, it must have a citation link. No exceptions.
+**Citation enforcement:** Every financial figure from Daloopa in the report data AND the rendered HTML document must use citation format: `[$X.XX million](https://daloopa.com/src/{fundamental_id})`. If a number came from `get_company_fundamentals`, it must have a citation link. No exceptions. Before rendering, verify that every Daloopa-sourced value carries its fundamental_id through to the citation link.

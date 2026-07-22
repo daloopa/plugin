@@ -65,7 +65,7 @@ Then compute valuation metrics by combining stock prices with Daloopa fundamenta
 - **FCF Yield** = FCF (trailing 4Q) / Market Cap
 - **Dividend Yield** = Dividends Paid (trailing 4Q) / Market Cap
 
-For beta, use web search (see `data-access.md` Section 2). For forward multiples, use consensus estimates if available (Section 3).
+For beta, use MCP market data tools if available, otherwise web search (see `data-access.md` Section 2). For forward multiples, use consensus estimates if available (Section 3).
 
 ## 3. KPI Discovery & Mapping
 
@@ -104,111 +104,91 @@ For each company, calculate:
   - Convert to implied share price
 - Compute median implied price across methodologies
 
-## 5. Build Excel Workbook
+## 5. Structure the Data
 
-Generate a React artifact that uses SheetJS (xlsx library) to build and download the Excel file directly in the user's browser.
+Organize the gathered data as a multi-company dataset in memory, ready to feed the workbook builder in the next step:
 
-The workbook must contain 8 tabs with the following structure:
+```json
+{
+  "target_ticker": "AAPL",
+  "as_of_date": "YYYY-MM-DD",
+  "companies": [
+    {
+      "ticker": "AAPL",
+      "name": "Apple Inc.",
+      "is_target": true,
+      "market_data": {
+        "price": ..., "market_cap": ..., "enterprise_value": ...,
+        "shares_outstanding": ..., "beta": ...,
+        "trailing_pe": ..., "forward_pe": ...,
+        "ev_ebitda": ..., "price_to_sales": ...,
+        "ev_fcf": ..., "dividend_yield": ...
+      },
+      "periods": ["2024Q1", "2024Q2", ...],
+      "financials": {
+        "Revenue": {"2024Q1": ..., ...},
+        "Gross Profit": {...}, ...
+      },
+      "margins": {
+        "Gross Margin": {"2024Q1": ..., ...}, ...
+      },
+      "growth": {
+        "Revenue Growth YoY": {"2024Q1": ..., ...}, ...
+      },
+      "kpis": {
+        "iPhone Revenue": {"2024Q1": ..., ...}, ...
+      },
+      "kpi_categories": {
+        "Segment Revenue": ["iPhone Revenue", "Services Revenue", ...],
+        "Growth KPIs": ["Services Growth YoY"],
+        "Efficiency": ["R&D % Revenue", "SBC % Revenue"]
+      }
+    },
+    ...more companies...
+  ],
+  "implied_valuation": {
+    "pe_implied": ...,
+    "ev_ebitda_implied": ...,
+    "ps_implied": ...,
+    "ev_fcf_implied": ...,
+    "median_implied": ...
+  }
+}
+```
 
-### Tab 1: Comp Summary
-One-page overview with all companies side-by-side:
-- Company name, ticker, price, market cap
-- All valuation multiples (P/E, EV/EBITDA, P/S, P/B, EV/FCF, div yield)
-- Latest quarter revenue, EBITDA, net income
-- Growth rates (revenue YoY, EPS YoY)
-- Key margins (gross, operating, net, FCF)
-- Implied valuation for target (median across methodologies)
-- Premium/discount vs peers
+Every datapoint that originates from Daloopa must carry its `fundamental_id` alongside the value so the hyperlink can be attached when the workbook is built.
 
-### Tab 2: Revenue Drivers
-Unit economics decomposition per company (trailing 4 quarters):
-- Total revenue (4Q sum)
-- Segment revenue breakdown (% of total)
-- Key unit economics: units × ASP, or subscribers × ARPU, etc.
-- Growth trajectory by segment
+## 6. Build the Workbook
 
-### Tab 3: Operating KPIs
-Cross-company KPI comparison matrix:
-- Rows = KPIs (grouped by category from step 3)
-- Columns = companies
-- Show latest quarter value + YoY change where applicable
-- Highlight cells where data is unavailable (sparse matrix)
+Generate a React artifact that uses the SheetJS (`xlsx`) library to build and download the `.xlsx` workbook client-side. The artifact should construct the workbook from the structured data above and trigger a download when the user clicks a button (or immediately on load).
 
-### Tab 4: Financial Summary
-Side-by-side income statements (trailing 4 quarters):
-- Revenue, COGS, Gross Profit
-- R&D, SG&A, Operating Income
-- Interest, Tax, Net Income
-- Diluted EPS
-- Compute 4Q sums for each line item
+!!! MANDATORY EXCEL DATAPOINT HYPERLINK FORMAT !!!
+- ALWAYS attach a cell hyperlink when writing Daloopa fundamental datapoints into a worksheet cell
+- Format: [$<value> <unit>](https://daloopa.com/src/{fundamental_id})
+- Example: write `123.4` to cell B5 and set its link (`cell.l = { Target: "https://daloopa.com/src/71667434" }` in SheetJS) so it points to the source
+- Every Daloopa-sourced numeric cell MUST include its clickable source link — do not put the URL in a neighboring cell or as plain text
+- Do NOT add datapoint hyperlinks to headers, labels, blank cells, or unsourced formulas
 
-### Tab 5: Growth & Margins
-Trend analysis (up to 8 quarters):
-- Revenue growth YoY (%)
-- EPS growth YoY (%)
-- Gross margin (%)
-- Operating margin (%)
-- Net margin (%)
-- FCF margin (%)
-- Show trends across all periods for each company
+The workbook must have 8 tabs (sheets), built in this order:
+1. **Comp Summary** — one-pager with all companies, multiples, implied valuation
+2. **Revenue Drivers** — unit economics decomposition per company (trailing 4Q)
+3. **Operating KPIs** — cross-company KPI comparison matrix
+4. **Financial Summary** — side-by-side income statements (trailing 4Q)
+5. **Growth & Margins** — trend analysis (up to 8Q)
+6. **Valuation Detail** — implied prices by methodology, premium/discount
+7. **Balance Sheet & Capital** — leverage and capital returns
+8. **Raw Data** — full quarterly appendix for each company
 
-### Tab 6: Valuation Detail
-Implied prices by methodology:
-- P/E implied (peer median P/E × target EPS)
-- EV/EBITDA implied
-- P/S implied
-- EV/FCF implied
-- Median implied price
-- Current price
-- Premium/discount (%)
+Use SheetJS formulas (e.g. `cell.f`) where the original design calls for computed values (margins, growth rates, implied valuation) so the workbook stays live and auditable, rather than hardcoding pre-computed numbers.
 
-### Tab 7: Balance Sheet & Capital
-Leverage and capital returns:
-- Total Debt, Cash, Net Debt
-- Net Debt/EBITDA
-- Trailing 4Q: OCF, CapEx, FCF
-- FCF Yield
-- Shareholder Yield (buybacks + dividends)
+## 7. Output
 
-### Tab 8: Raw Data
-Full quarterly appendix for each company:
-- All 8 quarters of financial data
-- All KPIs by quarter
-- All growth rates and margins by quarter
-- Complete data backing the summary tabs
+Confirm to the user that the `.xlsx` workbook has downloaded from the artifact.
 
-**Styling requirements:**
-- Apply the design system color palette (Navy #1B2A4A headers, Steel Blue #4A6FA5 accents)
-- Number formatting per design-system.md conventions
-- Bold headers, freeze panes on all tabs
-- Conditional formatting: green for positive growth, red for negative
-- Auto-adjust column widths
-
-The React artifact should:
-1. Import the SheetJS library (xlsx)
-2. Construct all 8 worksheets programmatically
-3. Apply styling (bold headers, number formats, colors)
-4. Generate the .xlsx file
-5. Trigger browser download with filename: `{TARGET_TICKER}_comp_sheet_{DATE}.xlsx`
-
-## 6. Output Summary
-
-After generating the Excel workbook, provide a concise summary highlighting:
-
-**Target positioning vs peers**:
-- Where does it rank on growth, margins, and valuation?
-- Quartile positioning across key metrics
-
-**Most differentiated KPIs**:
-- Which operational metrics set the target apart (positive or negative)?
-- Notable outliers in the KPI matrix
-
-**Implied valuation range**:
-- What does the peer group suggest the stock is worth?
-- Premium/discount vs current price
-- Which methodology drives the highest/lowest implied value?
-
-**Key risk**:
-- What's the biggest vulnerability the comp sheet reveals (e.g., premium valuation with decelerating KPIs, margins below peers, concentration risk)?
+Highlight in your summary:
+- **Target positioning vs peers**: Where does it rank on growth, margins, and valuation?
+- **Most differentiated KPIs**: Which operational metrics set the target apart (positive or negative)?
+- **Implied valuation range**: What does the peer group suggest the stock is worth?
+- **Key risk**: What's the biggest vulnerability the comp sheet reveals (e.g., premium valuation with decelerating KPIs, margins below peers, etc.)?
 
 All financial figures in the summary must use Daloopa citation format: [$X.XX million](https://daloopa.com/src/{fundamental_id})

@@ -1,14 +1,14 @@
 ---
 name: ib-deck
-description: Generate an institutional-grade investment banking pitch deck (HTML)
+description: Generate an institutional-grade investment banking pitch deck (HTML → PDF)
 argument-hint: TICKER [--category ib-advisory|activist-ls]
 ---
 
 Build an institutional-grade pitch deck for the company specified by the user: $ARGUMENTS
 
-**Before starting, read `design-system.md` for formatting conventions and `data-access.md` for data access methods.** Also read the reference files in this skill's `references/` directory for slide templates and components.
+**Before starting, read `data-access.md` for data access methods and `design-system.md` for formatting conventions.** Also read the reference files in this skill's `references/` directory for slide templates and components.
 
-This skill generates a self-contained HTML presentation that can be opened in a browser and printed to PDF if needed.
+This skill generates a self-contained HTML presentation. The HTML deck IS the final deliverable — no PDF rendering step is needed.
 
 ## Phase 1 — Requirements
 
@@ -37,18 +37,13 @@ Use Daloopa MCP for all financial data. Target comprehensive coverage:
 - **5+ years of quarterly financials** — calculate 20+ quarters backward from `latest_calendar_quarter` (income statement, balance sheet, cash flow)
 - **Segment and geographic breakdowns**
 - **All company-specific operating KPIs**
-- **6-10 peers** — get trading multiples and fundamentals from Daloopa + market data (see data-access.md Section 2)
-- **Guidance and consensus** (see data-access.md Section 3)
+- **6-10 peers** — get trading multiples and fundamentals from Daloopa + market data (see `data-access.md` Section 2)
+- **Guidance and consensus** (see `data-access.md` Section 3)
 - **SEC filings** — risk factors, growth drivers, M&A commentary, strategic language
 
-Get market data for the target and all peers:
+Get market data for the target and all peers using the 3-step resolution: (1) MCP market data tools if available, (2) web search, (3) sensible defaults:
 - Current price, market cap, shares outstanding, beta, trading multiples
 - Historical price data for TSR comparison
-
-Market data resolution order (see `data-access.md` Section 2):
-1. MCP market data tools (if available)
-2. Web search for current quotes, multiples, and historical data
-3. Sensible defaults (industry-average multiples if specific data unavailable)
 
 ## Phase 3 — Analysis
 
@@ -56,19 +51,13 @@ Run the core analyses needed for the deck:
 - **Valuation**: DCF (WACC, 5Y FCF projections, terminal value, sensitivity), comps table, implied valuation range
 - **Scenario analysis**: Bull/base/bear with bottoms-up segment builds — be honest about which scenario is most likely
 - **Capital allocation**: Buybacks, dividends, shareholder yield, leverage — flag any value-destructive patterns
-- **Financial projections**: 3-5 year forward estimates — challenge assumptions, don't just extrapolate
-
-**DCF Methodology** (inline calculation):
-- Project 5 years of unlevered free cash flows (UFCF = NOPAT + D&A - CapEx - ΔWC)
-- Discount at WACC (beta-based or peer-median if unavailable)
-- Terminal value using perpetuity growth method (TGR 2-3%)
-- PV of FCFs + PV of TV = EV → subtract net debt → equity value → per-share price
+- **Financial projections**: 3-5 year forward estimates, computed directly — challenge assumptions, don't just extrapolate
 
 **Critical assessment:** The deck should present an honest analytical view, not a promotional pitch. If the valuation looks stretched, say so. If growth is decelerating, show it clearly. If risks are material, give them proper weight. Institutional investors will dismiss analysis that reads as advocacy rather than research.
 
 ## Phase 4 — Build Presentation
 
-Generate a self-contained HTML file following the templates in `references/slide-templates.md`. Use components from `references/financial-components.md`.
+Generate a self-contained HTML file following the templates in `references/slide-templates.md`. Use components from `references/financial-components.md`. Present chart data as well-formatted tables using the CSS-only chart components (bar, waterfall, pie) described in `references/financial-components.md` — no external chart generation is needed.
 
 **Slide structure** (default 14-slide deck — adapt based on purpose):
 
@@ -91,30 +80,19 @@ Generate a self-contained HTML file following the templates in `references/slide
 - Every content slide must have minimum 2-3 data-rich elements (tables, charts, commentary)
 - No sparse slides — fill the space with analysis
 - All financial figures must include Daloopa citations
-- Follow design-system.md for colors, typography, number formatting
+- Follow `design-system.md` for colors, typography, number formatting
 - Use CSS `@page` with landscape orientation, 16:9 aspect ratio (1280×720px per slide)
 - Each slide is a `<div class="slide">` with `page-break-after: always`
-- All data displayed in tables (no chart generation)
 
 See `references/ib-advisory-patterns.md` for valuation methodology templates.
 
-## Phase 5 — Output
+## Phase 5 — Deliver
 
-Present the complete HTML deck directly in your response. Use the HTML Report Template structure from `design-system.md` with slide-specific CSS from `references/slide-templates.md`.
-
-Tell the user:
-- The deck is ready to view — open in any browser
-- To create a PDF: open in Chrome/Edge → Print → Save as PDF → set to Landscape orientation
+Present the complete, self-contained HTML deck directly in the response. Tell the user:
+- The HTML deck IS the final deliverable — no separate rendering step is needed
+- To get a PDF, they can open the HTML in a browser and use Print → Save as PDF
 - 2-3 sentence summary of the deck's key findings
 - Implied valuation range
 - How many slides were generated
 
-## Citation Format
-
-Every financial figure must use Daloopa citation format: [$X.XX million](https://daloopa.com/src/{fundamental_id})
-
-All tables must follow the standard financial analysis format:
-- **Columns** = time periods (Q1 2024, Q2 2024, etc.)
-- **Rows** = financial metrics (Revenue, Net Income, etc.)
-
-Data sourced from Daloopa.
+All financial figures must use Daloopa citation format: [$X.XX million](https://daloopa.com/src/{fundamental_id})
